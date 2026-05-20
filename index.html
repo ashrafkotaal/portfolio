@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; background: #f5f5f0; }
+        body.desktop { overflow: hidden; }
+        body.mobile { overflow-y: auto; overflow-x: hidden; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        canvas { display: block; width: 100%; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        var pdf = "ASHRAF_KOTAAL_Creative_Director_Bio1f.pdf";
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+        if (isMobile) {
+            document.body.className = "mobile";
+            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+            pdfjsLib.getDocument(pdf).promise.then(function(pdfDoc) {
+                var pages = [];
+                for (var i = 1; i <= pdfDoc.numPages; i++) pages.push(i);
+                return pages.reduce(function(prev, pageNum) {
+                    return prev.then(function() {
+                        return pdfDoc.getPage(pageNum).then(function(page) {
+                            var viewport = page.getViewport({ scale: 1 });
+                            var scale = window.innerWidth / viewport.width;
+                            var scaledViewport = page.getViewport({ scale: scale });
+                            var canvas = document.createElement("canvas");
+                            canvas.width = scaledViewport.width;
+                            canvas.height = scaledViewport.height;
+                            document.body.appendChild(canvas);
+                            return page.render({ canvasContext: canvas.getContext("2d"), viewport: scaledViewport }).promise;
+                        });
+                    });
+                }, Promise.resolve());
+            });
+        } else {
+            document.body.className = "desktop";
+            var iframe = document.createElement("iframe");
+            iframe.src = pdf + "#toolbar=0&navpanes=0&view=FitH";
+            document.body.appendChild(iframe);
+        }
+    </script>
+</body>
+</html>
